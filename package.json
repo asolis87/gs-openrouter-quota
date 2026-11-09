@@ -40,5 +40,10 @@
   },
   "engines": {
     "node": ">=22.19.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asolis87/gs-openrouter-quota.git"
+  },
+  "homepage": "https://github.com/asolis87/gs-openrouter-quota#readme"
 }

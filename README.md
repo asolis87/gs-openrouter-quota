@@ -8,7 +8,7 @@ See your OpenRouter quota inside [Pi](https://pi.dev) and [Gentle Shell](https:/
 ## Install
 
 ```bash
-pi install git:github.com/<owner>/gs-openrouter-quota
+pi install git:github.com/asolis87/gs-openrouter-quota
 ```
 
 Requires Node.js 22.19+ and Pi. Gentle Shell is optional: without it, `/openrouter` still works.
