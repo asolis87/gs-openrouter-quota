@@ -40,13 +40,16 @@
 
 ## Install
 
-```bash
-pi install git:github.com/asolis87/gs-openrouter-quota
-```
+Pick the command for how you run Pi:
 
-That's it if Pi already talks to OpenRouter (`/login openrouter` or `OPENROUTER_API_KEY`). Requires Node.js 22.19+. Gentle Shell is optional: without it everything works except the `alt+u` integration.
+| You use | Install | Update |
+|---|---|---|
+| **Gentle Shell** | `gentle-shell install git:github.com/asolis87/gs-openrouter-quota` | `gentle-shell update` |
+| **Pi** | `pi install git:github.com/asolis87/gs-openrouter-quota` | `pi update` |
 
-To update later: `pi update`.
+`gentle-shell install` runs Pi's own `install` against Gentle Shell's home, so use it when you launch `gentle-shell`; it is the one that enables the `alt+u` integration.
+
+That's it if Pi already talks to OpenRouter (`/login openrouter` or `OPENROUTER_API_KEY`). Requires Node.js 22.19+. Without Gentle Shell everything works except the `alt+u` integration.
 
 ## Usage guide
 
