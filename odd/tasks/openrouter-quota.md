@@ -23,7 +23,7 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - T3 [S5,S6,S7] `/openrouter` command: detail rendering + threshold alerts. route: inline. commit: 8cfe45b
 - T4 [S1] Package metadata, README, Gentle Hub topics instructions. route: inline. commit: b989250
 - T5 [S8-S12] Tabbed overlay + Models tab (activity client, stacked chart, ranking, tokens, missing-key instructions). route: delegated worker (context backstop) + independent verify (Risk item 2: management credential). commit: 3170d41
-- T6 [S13] Local usage ledger fallback for the Models tab. route: explore (Pi response id/cost) → delegated worker (context backstop). commit: —
+- T6 [S13] Local usage ledger fallback for the Models tab. route: explore (Pi response id/cost) → delegated worker (context backstop). commit: 251816a
 
 ## Log
 - L1: "Hola, quiero agregar un paquete/extension a gentle-shell que pueda verse en https://gentlemanprogramming.com/gentle-hub/ , mi idea es tener una forma de visualizar la quota de openrouter, ya sea por plan o por api , los limites y toda la info que pueda resultarle util al usuario, se entiende?"
@@ -34,3 +34,4 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - L5: "se podria meter un tab a la seccion /openrouter donde pueda visualizarse el uso por modelo como lo muestra openrouter?" Answers: "Sí, implementala"; key "Env OPENROUTER_MANAGEMENT_KEY"; content "Gráfico diario apilado, Ranking por modelo ($ y %), Tokens por modelo"; without key "Instrucciones para configurarla".
 - L6: T5 verified independently (gentle-ai-verify): S8-S12 pass, no credential findings; 40/40 tests, tsc 0. Released 0.3.0 (3170d41). Not verified live against /activity.
 - L7: User's account is an organization member without access to management keys ("mi cuenta de openrouter es de organization, asi que no tengo acceso al panel de managementKey.. tenemos alguna otra opcion?"). Options presented (admin key / local ledger); user: "si, vamos con B como respaldo".
+- L8: T6 done (251816a, 0.4.0): 64/64 tests, tsc 0; smoke with temp PI_CODING_AGENT_DIR recorded only openrouter assistant messages, no content. Known limits: compaction (>512KB) can race with a concurrent append; pending cost correction dropped if a short-lived process exits. Not verified live.
