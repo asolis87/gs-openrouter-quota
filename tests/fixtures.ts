@@ -24,3 +24,22 @@ export const SAMPLE = {
 		rate_limit: { requests: 10, interval: "10s" },
 	},
 };
+
+// GET /api/v1/activity rows for the 30 completed UTC days before 2025-11-05
+// (window Oct 6 – Nov 4): seven models, so the top five plus an "other" bucket.
+const row = (date: string, model: string, usage: number, requests: number, extra: Record<string, unknown> = {}) => ({
+	date, model, model_permaslug: `${model}-2025`, provider_name: "Provider", endpoint_id: "e1",
+	usage, byok_usage_inference: 0, requests, prompt_tokens: 1000, completion_tokens: 100, reasoning_tokens: 0, cached_tokens: 0, ...extra,
+});
+export const ACTIVITY = {
+	data: [
+		row("2025-11-04", "anthropic/claude-sonnet-4", 2, 10, { prompt_tokens: 1_000_000, completion_tokens: 300_000, reasoning_tokens: 40_000, cached_tokens: 12_500 }),
+		row("2025-10-20", "anthropic/claude-sonnet-4", 1, 5, { prompt_tokens: 200_000, completion_tokens: 40_000 }),
+		row("2025-11-04", "openai/gpt-4o", 0.5, 4, { byok_usage_inference: 0.5 }),
+		row("2025-11-03", "google/gemini-2.5-pro", 0.8, 8),
+		row("2025-10-06", "deepseek/deepseek-chat", 0.4, 20),
+		row("2025-10-15", "meta-llama/llama-3.3-70b", 0.3, 3),
+		row("2025-10-15", "mistral/mistral-large", 0.2, 2),
+		row("2025-10-06", "qwen/qwen3", 0.1, 1),
+	],
+};

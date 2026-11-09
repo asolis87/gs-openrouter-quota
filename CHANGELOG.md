@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- `/openrouter` overlay gets tabs: **Quota** (the existing report) and **Models**, switched with `tab`. `r` refreshes the active tab.
+- Models tab: spend per model over the last 30 completed UTC days from `GET /api/v1/activity` — a stacked daily chart (top 5 models plus `other`), a ranking in $ and % (BYOK marked) with requests, and prompt/completion/reasoning/cached tokens per model.
+- The Models tab uses a management key read only from `OPENROUTER_MANAGEMENT_KEY`; it is only sent to that read-only endpoint. Without it, the tab explains how to create one.
+
 ## 0.2.1
 
 - `esc` now closes the `/openrouter` overlay in terminals with extended keyboard protocols (e.g. kitty), using the TUI's own key matcher.
