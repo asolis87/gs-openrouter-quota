@@ -73,3 +73,14 @@ test("QuotaView closes on esc and q, and survives a throwing loader", async () =
 	await settle();
 	assert.match(broken.render(60)[1]!, /boom/);
 });
+
+test("QuotaView closes on the escape key in any terminal encoding the TUI reports", () => {
+	const { view, calls } = harness([]);
+	const kittyEscape = "\u001b[27u";
+	view.handleInput(kittyEscape);
+	assert.equal(calls.close, 0, "the default matcher only knows the raw byte");
+	const tuiAware = new QuotaView({ ...view["deps"], isEscape: (data: string) => data === kittyEscape || data === "\u001b" });
+	tuiAware.handleInput(kittyEscape);
+	tuiAware.handleInput("x");
+	assert.equal(calls.close, 1);
+});

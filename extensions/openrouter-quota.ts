@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { Key, matchesKey, Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { QuotaView } from "../lib/quota-view.ts";
 import { fetchKeyInfo, OPENROUTER_KEY_URL, OPENROUTER_PROVIDER, resolveApiKey, type KeyInfo } from "../lib/openrouter.ts";
 import { parseThreshold, renderReport, THRESHOLD_ENV } from "../lib/report.ts";
@@ -64,6 +64,7 @@ export default function openrouterQuota(pi: ExtensionAPI): void {
 						},
 						onClose: () => done(null),
 						requestRender: () => tui.requestRender(),
+						isEscape: (data) => matchesKey(data, Key.escape),
 					});
 					view.refresh();
 					return view;

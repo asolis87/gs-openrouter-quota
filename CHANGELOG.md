@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- `esc` now closes the `/openrouter` overlay in terminals with extended keyboard protocols (e.g. kitty), using the TUI's own key matcher.
+
 ## 0.2.0
 
 - `/openrouter` opens a centered overlay framed like Gentle Shell's `alt+u` panel, with `r` to refresh and `esc`/`q` to close. Print/JSON modes still get the card.

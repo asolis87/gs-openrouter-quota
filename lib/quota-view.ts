@@ -15,6 +15,8 @@ export interface QuotaViewDeps {
 	onAlerts(alerts: Alert[]): void;
 	onClose(): void;
 	requestRender(): void;
+	/** The TUI's escape matcher; terminals with extended keyboard protocols do not send a bare ESC byte. */
+	isEscape?(data: string): boolean;
 }
 
 const TITLE = "✿ OpenRouter";
@@ -33,7 +35,8 @@ export class QuotaView {
 	}
 
 	handleInput(data: string): void {
-		if (data === ESCAPE || data === "q") {
+		const isEscape = this.deps.isEscape ?? ((input: string) => input === ESCAPE);
+		if (isEscape(data) || data === "q") {
 			this.deps.onClose();
 			return;
 		}
