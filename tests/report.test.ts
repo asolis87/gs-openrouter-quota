@@ -21,11 +21,22 @@ test("renderReport shows every dollar detail alt+u cannot", () => {
 		"Key limit    $15.00 of $20.00 used (75%) · $5.00 left · monthly, resets in 25d 8h",
 		"Budgets",
 		"  workspace  $90.00 of $100.00 used (90%) · $10.00 left · weekly, resets in 4d 8h · blocks first",
-		"  key limit  $15.00 of $20.00 used (75%) · $5.00 left · never resets",
 		"Usage        today $1.25 · week $7.50 · month $15.00 · all time $42.50",
 		"BYOK         today $0.00 · week $1.00 · month $2.00 · all time $3.00",
 		"Free models  40 of 1000 requests today (4%) · 960 left · resets in 8h 30m",
 		"Alerts at 80% · refresh with /openrouter",
+	]);
+});
+
+test("renderReport folds the key_limit budget into the key line, keeping blocks first", () => {
+	const info = parseKeyInfo({ data: { label: "k", limit: 1000, limit_remaining: 957.79, limit_reset: "daily", usage: 1161, is_free_tier: false,
+		budgets: [{ scope: "key_limit", limit_usd: 1000, spend_usd: 42.21, remaining_usd: 957.79, reset_interval: "daily", resets_at: null }],
+		effective_budget: { scope: "key_limit", limit_usd: 1000, spend_usd: 42.21, remaining_usd: 957.79, reset_interval: "daily", resets_at: null } } })!;
+	const lines = renderReport(info, NOW, 80, plain);
+	assert.deepEqual(lines.slice(0, 3), [
+		"OpenRouter · k · paid",
+		"Key limit    $42.21 of $1000.00 used (4%) · $957.79 left · daily, resets in 8h 30m · blocks first",
+		"Usage        all time $1161.00",
 	]);
 });
 

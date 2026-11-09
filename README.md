@@ -43,25 +43,29 @@ The most used limit comes first, so it is the one the status bar shows. Gentle S
 
 ## `/openrouter`
 
-Fetches once, on demand, and prints a card that stays out of the model's context:
+Opens a centered overlay framed like Gentle Shell's `alt+u` panel. It fetches once when it opens; press `r` to refresh and `esc` (or `q`) to close. Nothing it shows enters the model's context.
 
 ```
-OpenRouter · sk-or-v1-abc...xyz · paid
-Key limit    $15.00 of $20.00 used (75%) · $5.00 left · monthly, resets in 25d 8h
-Budgets
-  workspace  $90.00 of $100.00 used (90%) · $10.00 left · weekly, resets in 4d 8h · blocks first
-  key limit  $15.00 of $20.00 used (75%) · $5.00 left · never resets
-Usage        today $1.25 · week $7.50 · month $15.00 · all time $42.50
-BYOK         today $0.00 · week $1.00 · month $2.00 · all time $3.00
-Free models  40 of 1000 requests today (4%) · 960 left · resets in 8h 30m
-Alerts at 80% · refresh with /openrouter
+╭─ ✿ OpenRouter ───────────────────────────────────────────────────────────────────────────────────────╮
+│ sk-or-v1-abc...xyz · paid                                                                            │
+│ Key limit    $15.00 of $20.00 used (75%) · $5.00 left · monthly, resets in 25d 8h                    │
+│ Budgets                                                                                              │
+│   workspace  $90.00 of $100.00 used (90%) · $10.00 left · weekly, resets in 4d 8h · blocks first     │
+│ Usage        today $1.25 · week $7.50 · month $15.00 · all time $42.50                               │
+│ BYOK         today $0.00 · week $1.00 · month $2.00 · all time $3.00                                 │
+│ Free models  40 of 1000 requests today (4%) · 960 left · resets in 8h 30m                            │
+│ Alerts at 80%                                                                                        │
+│ r refresh   esc close                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-`blocks first` marks the budget OpenRouter reports as `effective_budget`.
+Without a TUI (print or JSON mode) the same report is appended as a card instead.
+
+`blocks first` marks the limit OpenRouter reports as `effective_budget`. OpenRouter also lists the key's own limit as a `key_limit` budget; it is shown once, on the Key limit line.
 
 ### Alerts
 
-After each `/openrouter`, every limit at or above the threshold raises a warning; an exhausted one (nothing left) raises an error.
+Each time `/openrouter` fetches (on open and on `r`), every limit at or above the threshold raises a warning; an exhausted one (nothing left) raises an error.
 
 | `OPENROUTER_QUOTA_ALERT_PERCENT` | Effect |
 |---|---|
@@ -78,7 +82,9 @@ After each `/openrouter`, every limit at or above the threshold raises a warning
 ## Development
 
 ```bash
+npm install
 npm test
+npm run typecheck
 ```
 
 Tests use `node:test` with type stripping; no build step.

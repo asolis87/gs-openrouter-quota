@@ -1,7 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { QuotaView } from "../lib/quota-view.ts";
 import { fetchKeyInfo, OPENROUTER_KEY_URL, OPENROUTER_PROVIDER, resolveApiKey, type KeyInfo } from "../lib/openrouter.ts";
-import { findAlerts, parseThreshold, renderReport, THRESHOLD_ENV } from "../lib/report.ts";
+import { parseThreshold, renderReport, THRESHOLD_ENV } from "../lib/report.ts";
 import { createUsageSource, USAGE_SOURCE_EVENT } from "../lib/usage-source.ts";
 
 const ENTRY_TYPE = "openrouter-quota";
@@ -36,15 +37,39 @@ export default function openrouterQuota(pi: ExtensionAPI): void {
 	pi.registerCommand(OPENROUTER_PROVIDER, {
 		description: "Show OpenRouter quota: key limit, budgets, usage in $, free-model requests",
 		handler: async (_args, ctx) => {
-			const apiKey = await resolveApiKey(ctx.modelRegistry, process.env);
-			const result = await fetchKeyInfo(apiKey, boundedFetch);
-			if (!result.ok) {
-				if (ctx.hasUI) ctx.ui.notify(result.error, "error");
+			const threshold = parseThreshold(process.env[THRESHOLD_ENV]);
+			const load = async () => fetchKeyInfo(await resolveApiKey(ctx.modelRegistry, process.env), boundedFetch);
+
+			// Without a TUI (print/JSON modes) there is no overlay: append the card.
+			if (!ctx.hasUI) {
+				const result = await load();
+				if (result.ok) pi.appendEntry<ReportEntry>(ENTRY_TYPE, { info: result.info, fetchedAt: Date.now(), threshold });
 				return;
 			}
-			const threshold = parseThreshold(process.env[THRESHOLD_ENV]);
-			pi.appendEntry<ReportEntry>(ENTRY_TYPE, { info: result.info, fetchedAt: Date.now(), threshold });
-			if (ctx.hasUI) for (const alert of findAlerts(result.info, threshold)) ctx.ui.notify(alert.message, alert.level);
+
+			// A centered overlay like Gentle Shell's alt+u panel: r refresh, esc close.
+			await ctx.ui.custom<null>(
+				(tui, theme, _keybindings, done) => {
+					const view = new QuotaView({
+						theme,
+						fit: (text, width) => {
+							const clipped = truncateToWidth(text, width, "…");
+							return clipped + " ".repeat(Math.max(0, width - visibleWidth(clipped)));
+						},
+						now: () => Date.now(),
+						threshold,
+						load,
+						onAlerts: (alerts) => {
+							for (const alert of alerts) ctx.ui.notify(alert.message, alert.level);
+						},
+						onClose: () => done(null),
+						requestRender: () => tui.requestRender(),
+					});
+					view.refresh();
+					return view;
+				},
+				{ overlay: true, overlayOptions: { width: "80%", minWidth: 60, anchor: "center" } },
+			);
 		},
 	});
 }

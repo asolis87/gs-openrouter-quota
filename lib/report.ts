@@ -79,24 +79,35 @@ const scopeName = (budget: Budget): string => budget.scope.replace(/_/g, " ");
 const sameBudget = (a: Budget, b: Budget | null): boolean =>
 	!!b && a.scope === b.scope && a.limitUsd === b.limitUsd && a.spendUsd === b.spendUsd && a.resetsAt === b.resetsAt;
 
-export function renderReport(info: KeyInfo, now: number, threshold: number, theme: ReportTheme): string[] {
+export interface ReportOptions {
+	/** Inside the overlay: its frame already names OpenRouter and shows the refresh key. */
+	framed?: boolean;
+}
+
+export function renderReport(info: KeyInfo, now: number, threshold: number, theme: ReportTheme, options: ReportOptions = {}): string[] {
 	const label = (text: string): string => theme.fg("muted", text.padEnd(LABEL_WIDTH));
 	const lines: string[] = [];
 	const plan = info.isFreeTier ? "free tier" : "paid";
-	lines.push([theme.bold(theme.fg("accent", "OpenRouter")), info.label, theme.fg("muted", plan)].filter(Boolean).join(" · "));
+	const title = options.framed ? "" : theme.bold(theme.fg("accent", "OpenRouter"));
+	lines.push([title, info.label, theme.fg("muted", plan)].filter(Boolean).join(" · "));
 
+	// OpenRouter also lists the key's own limit as a "key_limit" budget; it is
+	// the Key limit line already, so it only lends that line its "blocks first".
+	const blocksFirst = ` · ${theme.fg("warning", "blocks first")}`;
+	const budgets = info.keyLimit ? info.budgets.filter((b) => b.scope !== "key_limit") : info.budgets;
 	if (info.keyLimit) {
 		const { limit, remaining, reset } = info.keyLimit;
-		lines.push(`${label("Key limit")}${spendLine(theme, limit - remaining, limit, remaining, threshold)} · ${theme.fg("dim", resetText(reset, null, now))}`);
+		const first = info.effectiveBudget?.scope === "key_limit" ? blocksFirst : "";
+		lines.push(`${label("Key limit")}${spendLine(theme, limit - remaining, limit, remaining, threshold)} · ${theme.fg("dim", resetText(reset, null, now))}${first}`);
 	} else {
 		lines.push(`${label("Key limit")}unlimited`);
 	}
 
-	if (info.budgets.length > 0) {
+	if (budgets.length > 0) {
 		lines.push(theme.fg("muted", "Budgets"));
-		const width = Math.max(...info.budgets.map((b) => scopeName(b).length)) + 2;
-		for (const budget of info.budgets) {
-			const first = sameBudget(budget, info.effectiveBudget) ? ` · ${theme.fg("warning", "blocks first")}` : "";
+		const width = Math.max(...budgets.map((b) => scopeName(b).length)) + 2;
+		for (const budget of budgets) {
+			const first = sameBudget(budget, info.effectiveBudget) ? blocksFirst : "";
 			lines.push(`  ${scopeName(budget).padEnd(width)}${spendLine(theme, budget.spendUsd, budget.limitUsd, budget.remainingUsd, threshold)} · ${theme.fg("dim", resetText(budget.resetInterval, budget.resetsAt, now))}${first}`);
 		}
 	}
@@ -109,7 +120,8 @@ export function renderReport(info: KeyInfo, now: number, threshold: number, them
 		lines.push(`${label("Free models")}${used} of ${limit} requests today (${paintPercent(theme, pct(used, limit), threshold)}) · ${remaining} left · ${theme.fg("dim", resetText(null, nextReset("daily", now), now))}`);
 	}
 
-	lines.push(theme.fg("dim", `${threshold > 0 ? `Alerts at ${threshold}%` : "Alerts off"} · refresh with /${OPENROUTER_PROVIDER}`));
+	const alerts = threshold > 0 ? `Alerts at ${threshold}%` : "Alerts off";
+	lines.push(theme.fg("dim", options.framed ? alerts : `${alerts} · refresh with /${OPENROUTER_PROVIDER}`));
 	return lines;
 }
 
