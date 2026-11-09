@@ -36,3 +36,4 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - L7: User's account is an organization member without access to management keys ("mi cuenta de openrouter es de organization, asi que no tengo acceso al panel de managementKey.. tenemos alguna otra opcion?"). Options presented (admin key / local ledger); user: "si, vamos con B como respaldo".
 - L8: T6 done (251816a, 0.4.0): 64/64 tests, tsc 0; smoke with temp PI_CODING_AGENT_DIR recorded only openrouter assistant messages, no content. Known limits: compaction (>512KB) can race with a concurrent append; pending cost correction dropped if a short-lived process exits. Not verified live.
 - L9: User tested 0.4.0 live in Pi: "ya lo probe, se ve bastante bien".
+- L10: User asked "podemos hacer tag para release?" → annotated tag v0.4.0 on da42473 and GitHub release v0.4.0 (latest) published.
