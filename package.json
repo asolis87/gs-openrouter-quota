@@ -1,6 +1,6 @@
 {
   "name": "gs-openrouter-quota",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "OpenRouter quota for Pi and Gentle Shell: alt+u usage integration and a /openrouter detail command with threshold alerts.",
   "type": "module",
   "license": "MIT",

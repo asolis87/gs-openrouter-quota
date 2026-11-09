@@ -161,3 +161,24 @@ test("QuotaView switches tabs with an injected tab matcher", () => {
 	tuiAware.handleInput(kittyTab);
 	assert.equal(calls.activity, 1);
 });
+
+test("QuotaView renders ledger results as local data that includes today", async () => {
+	const today = { date: "2025-11-05", model: "openai/gpt-4o", permaslug: null, provider: null, usage: 0.25, byokUsage: 0, requests: 2, promptTokens: 10, completionTokens: 1, reasoningTokens: 0, cachedTokens: 0 };
+	const { view } = harness([], [{ ok: true, rows: [today], source: { kind: "ledger", since: "2025-11-05", estimated: 1 } }]);
+	view.handleInput("\t");
+	await settle();
+	const lines = view.render(110);
+	for (const line of lines) assert.equal(line.length, 110);
+	assert.match(lines[1]!, /Spend in last 30 days {2}\$0\.25 · 2 requests/);
+	assert.match(lines[2]!, /Local: usage through Pi on this machine since Nov 5 · 1 estimated/);
+	assert.match(lines.join("\n"), /openai\/gpt-4o/);
+});
+
+test("QuotaView shows the empty-ledger message instead of the missing-key error", async () => {
+	const { view } = harness([], [{ ok: true, rows: [], source: { kind: "ledger", since: null, estimated: 0 } }]);
+	view.handleInput("\t");
+	await settle();
+	const text = view.render(110).join("\n");
+	assert.match(text, /No OpenRouter usage through Pi recorded on this machine yet/);
+	assert.doesNotMatch(text, /No activity in the last 30 days/);
+});

@@ -1,4 +1,4 @@
-import { MANAGEMENT_ENV_KEY, type ActivityRow } from "./activity.ts";
+import { MANAGEMENT_ENV_KEY, type ActivityRow, type LedgerSource } from "./activity.ts";
 import { formatUsd, type ReportTheme } from "./report.ts";
 
 // The Models tab: spend per model over the last 30 completed UTC days, like
@@ -58,10 +58,13 @@ function addStat(into: ModelStat, from: ModelStat): void {
 	into.cachedTokens += from.cachedTokens;
 }
 
-/** The window ends at the last completed UTC day (or a later row date, should OpenRouter report one). */
-export function summarizeActivity(rows: ActivityRow[], now: number, top = TOP_MODELS): ModelsSummary {
-	const yesterday = isoDay(Math.floor(now / DAY_MS) * DAY_MS - DAY_MS);
-	const last = rows.reduce((max, row) => (row.date > max ? row.date : max), yesterday);
+/**
+ * The window ends at the last completed UTC day (or a later row date, should OpenRouter report one).
+ * Local ledger data includes today, so `includeToday` ends it at the current UTC day.
+ */
+export function summarizeActivity(rows: ActivityRow[], now: number, top = TOP_MODELS, includeToday = false): ModelsSummary {
+	const lastDefault = isoDay(Math.floor(now / DAY_MS) * DAY_MS - (includeToday ? 0 : DAY_MS));
+	const last = rows.reduce((max, row) => (row.date > max ? row.date : max), lastDefault);
 	const end = Date.parse(`${last}T00:00:00Z`);
 	const days = Array.from({ length: WINDOW_DAYS }, (_, i) => isoDay(end - (WINDOW_DAYS - 1 - i) * DAY_MS));
 	const index = new Map(days.map((day, i) => [day, i]));
@@ -186,13 +189,20 @@ export function renderChart(summary: ModelsSummary, width: number, theme: Report
 
 const truncate = (text: string, width: number): string => (text.length > width ? `${text.slice(0, Math.max(0, width - 1))}…` : text);
 
-export function renderModels(summary: ModelsSummary, width: number, theme: ReportTheme): string[] {
-	const note = theme.fg("dim", "Completed UTC days only · today is on the Quota tab");
-	if (summary.series.length === 0) return [theme.fg("muted", "No activity in the last 30 days."), note];
+/** Without a source the rows are account-wide /activity; a ledger source labels them as local. */
+export function renderModels(summary: ModelsSummary, width: number, theme: ReportTheme, source?: LedgerSource): string[] {
+	if (source && summary.series.length === 0) return renderEmptyLedger(theme);
+	const header = source
+		? [
+				theme.fg("muted", `Local: usage through Pi on this machine${source.since ? ` since ${dayLabel(source.since)}` : ""}${source.estimated > 0 ? ` · ${source.estimated} estimated` : ""}`),
+				theme.fg("dim", "Last 30 days incl. today (UTC)"),
+			]
+		: [theme.fg("dim", "Completed UTC days only · today is on the Quota tab")];
+	if (summary.series.length === 0) return [theme.fg("muted", "No activity in the last 30 days."), ...header];
 
 	const lines: string[] = [];
 	lines.push(`${theme.fg("muted", "Spend in last 30 days")}  ${theme.bold(formatUsd(summary.totalSpend))} · ${summary.totalRequests} requests`);
-	lines.push(note);
+	lines.push(...header);
 	lines.push("");
 	lines.push(theme.fg("muted", "Daily spend by model"));
 	lines.push(...renderChart(summary, width, theme));
@@ -223,7 +233,21 @@ export function renderModels(summary: ModelsSummary, width: number, theme: Repor
 		const { promptTokens, completionTokens, reasoningTokens, cachedTokens } = s.stat;
 		lines.push(`${swatch(i)} ${name(i)}  ${formatCount(promptTokens).padStart(7)}  ${formatCount(completionTokens).padStart(10)}  ${formatCount(reasoningTokens).padStart(9)}  ${formatCount(cachedTokens).padStart(7)}`);
 	});
+	if (source) {
+		lines.push("");
+		lines.push(theme.fg("dim", `Set ${MANAGEMENT_ENV_KEY} to see account-wide data from OpenRouter.`));
+	}
 	return lines;
+}
+
+/** The ledger fallback before anything was recorded: say so, and how to get account-wide data instead. */
+export function renderEmptyLedger(theme: ReportTheme): string[] {
+	return [
+		theme.fg("muted", "No OpenRouter usage through Pi recorded on this machine yet."),
+		theme.fg("dim", "Responses from openrouter/... models are recorded locally as you use them."),
+		`For account-wide data, create a management key at ${theme.fg("accent", "https://openrouter.ai/settings/management-keys")}`,
+		`and ${theme.fg("accent", `export ${MANAGEMENT_ENV_KEY}=...`)} before starting Pi.`,
+	];
 }
 
 export function renderMissingKey(theme: ReportTheme): string[] {

@@ -4,7 +4,7 @@ See your OpenRouter quota inside [Pi](https://pi.dev) and [Gentle Shell](https:/
 
 - **`alt+u` integration** — OpenRouter shows up in Gentle Shell's usage view next to Codex, Anthropic and NaN, with percent meters and reset times.
 - **`/openrouter` command** — the full dollar detail the usage view cannot show, plus alerts when a limit crosses your threshold.
-- **Models tab** — spend per model over the last 30 days, like OpenRouter's activity page: a stacked daily chart, a ranking in $ and %, and tokens per model.
+- **Models tab** — spend per model over the last 30 days, like OpenRouter's activity page: a stacked daily chart, a ranking in $ and %, and tokens per model. Without a management key it falls back to a local record of your usage through Pi.
 
 ## Install
 
@@ -21,9 +21,9 @@ The key is resolved in this order:
 1. Pi's own OpenRouter credential (`/login openrouter`, or however Pi is configured for the `openrouter` provider).
 2. The `OPENROUTER_API_KEY` environment variable.
 
-The key is only sent to `https://openrouter.ai/api/v1/key`. It is never stored or logged.
+The key is only sent to `https://openrouter.ai/api/v1/key` and, for the [local ledger](#local-ledger-fallback), to `https://openrouter.ai/api/v1/generation?id=…`. It is never stored or logged.
 
-The Models tab needs a separate **management key**, read only from `OPENROUTER_MANAGEMENT_KEY` (never from Pi's provider auth). See [Models tab](#models-tab).
+For account-wide data the Models tab uses a separate **management key**, read only from `OPENROUTER_MANAGEMENT_KEY` (never from Pi's provider auth). Without it, the tab shows the local ledger. See [Models tab](#models-tab).
 
 ## `alt+u` usage view
 
@@ -68,7 +68,14 @@ Without a TUI (print or JSON mode) the same report is appended as a card instead
 
 ### Models tab
 
-Spend per model over the last 30 **completed UTC days**, from `GET https://openrouter.ai/api/v1/activity`. Today is not part of that window; today's spend is on the Quota tab. The data is fetched the first time you open the tab and again on `r` while it is active.
+Spend per model over the last 30 days. The source depends on `OPENROUTER_MANAGEMENT_KEY`:
+
+| `OPENROUTER_MANAGEMENT_KEY` | Source | Window |
+|---|---|---|
+| set | `GET https://openrouter.ai/api/v1/activity`: the whole account, every app and machine | 30 **completed UTC days**; today's spend is on the Quota tab |
+| unset | the [local ledger](#local-ledger-fallback): only usage through Pi on this machine | last 30 days **including today** (UTC) |
+
+The data is fetched (or read) the first time you open the tab and again on `r` while it is active.
 
 ```
 ╭─ ✿ OpenRouter ─ Quota · Models ──────────────────────────────────────────────────────────────────╮
@@ -108,6 +115,26 @@ Spend per model over the last 30 **completed UTC days**, from `GET https://openr
 - **Ranking** — spend (including BYOK inference, marked `(BYOK)`), share of the 30-day total, and requests.
 - **Tokens** — prompt, completion, reasoning and cached tokens per model.
 
+#### Local ledger fallback
+
+Without a management key (for example, organization members who cannot create one), the Models tab shows what this package recorded locally. The header says so:
+
+```
+│ Spend in last 30 days  $1.95 · 7 requests                                                        │
+│ Local: usage through Pi on this machine since Oct 21 · 2 estimated                               │
+│ Last 30 days incl. today (UTC)                                                                   │
+│ ...                                                                                              │
+│ Set OPENROUTER_MANAGEMENT_KEY to see account-wide data from OpenRouter.                          │
+```
+
+- **What is recorded** — one line per OpenRouter response made through Pi: the generation id, time, model, cost, BYOK (when known), requests and prompt/completion/reasoning/cached token counts. Never API keys, prompts or message content.
+- **Where** — `~/.pi/agent/openrouter-quota/ledger.jsonl` (Pi's agent directory; `PI_CODING_AGENT_DIR` moves it). It never leaves your machine.
+- **Who** — every Pi process with this package installed, subagents included. Usage from other apps, machines or the OpenRouter website is not in it.
+- **Retention** — entries older than 30 days are ignored, and the file is compacted at session start once it passes 512 KB.
+- **Cost** — Pi's cost for the response. When that is only a catalog estimate, the package asks `GET https://openrouter.ai/api/v1/generation?id=<id>` once (with your inference key, ~3s later) for the billed cost and whether it was BYOK. If that fails, the estimate stays and the header counts it as `estimated`.
+
+Until the first OpenRouter response is recorded, the tab says nothing was recorded yet and how to set up a management key.
+
 #### Management key
 
 `/api/v1/activity` only accepts a [management key](https://openrouter.ai/settings/management-keys), not a regular inference key:
@@ -115,9 +142,9 @@ Spend per model over the last 30 **completed UTC days**, from `GET https://openr
 1. Create one in OpenRouter → Settings → Management Keys.
 2. `export OPENROUTER_MANAGEMENT_KEY=...` and restart Pi.
 
-Without it, the Models tab shows these instructions instead.
+Without it, the Models tab shows the [local ledger](#local-ledger-fallback) instead.
 
-> **Security:** a management key can create, change and delete your API keys. This package reads it only from `OPENROUTER_MANAGEMENT_KEY`, sends it only with the read-only `GET https://openrouter.ai/api/v1/activity`, and never stores, logs or renders it. Its requests are limited to a fixed URL allowlist (`/api/v1/key` and `/api/v1/activity`).
+> **Security:** a management key can create, change and delete your API keys. This package reads it only from `OPENROUTER_MANAGEMENT_KEY`, sends it only with the read-only `GET https://openrouter.ai/api/v1/activity`, and never stores, logs or renders it. Its requests are limited to a fixed URL allowlist (`/api/v1/key`, `/api/v1/activity`, and `/api/v1/generation` with a single validated `id`).
 
 ### Alerts
 

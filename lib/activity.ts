@@ -21,7 +21,17 @@ export interface ActivityRow {
 	cachedTokens: number;
 }
 
-export type ActivityResult = { ok: true; rows: ActivityRow[] } | { ok: false; error: string; missingKey?: true };
+/** Where Models rows came from when not /activity: the local ledger of usage through Pi. */
+export interface LedgerSource {
+	kind: "ledger";
+	/** First recorded UTC day in the window, YYYY-MM-DD, or null when nothing was recorded. */
+	since: string | null;
+	/** Entries whose cost is still Pi's catalog estimate. */
+	estimated: number;
+}
+
+/** `source` is absent for account-wide /activity rows. */
+export type ActivityResult = { ok: true; rows: ActivityRow[]; source?: LedgerSource } | { ok: false; error: string; missingKey?: true };
 
 const DATE = /^(\d{4}-\d{2}-\d{2})(?:$|[ T])/;
 const INVALID = Symbol("invalid");

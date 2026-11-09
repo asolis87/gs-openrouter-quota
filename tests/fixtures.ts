@@ -43,3 +43,22 @@ export const ACTIVITY = {
 		row("2025-10-06", "qwen/qwen3", 0.1, 1),
 	],
 };
+
+// A Pi AssistantMessage from the openrouter provider, as `message_end` delivers it.
+export const assistantMessage = (overrides: Record<string, unknown> = {}, usage: Record<string, unknown> = {}, cost: Record<string, unknown> = {}) => ({
+	role: "assistant",
+	content: [{ type: "text", text: "SECRET PROMPT ANSWER" }],
+	api: "openai-completions",
+	provider: "openrouter",
+	model: "anthropic/claude-sonnet-4",
+	responseModel: "anthropic/claude-4-sonnet-20250522",
+	responseId: "gen-1730800000-abcDEF123",
+	usage: {
+		input: 1000, output: 200, cacheRead: 300, cacheWrite: 50, reasoning: 40, totalTokens: 1550,
+		cost: { input: 0.003, output: 0.003, cacheRead: 0.0001, cacheWrite: 0.0002, total: 0.0063, totalFromProvider: true, ...cost },
+		...usage,
+	},
+	stopReason: "stop",
+	timestamp: Date.UTC(2025, 10, 5, 12, 0),
+	...overrides,
+});

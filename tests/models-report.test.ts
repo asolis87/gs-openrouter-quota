@@ -101,3 +101,39 @@ test("renderModels says so when there is no activity, and the missing-key view e
 test("formatCount compacts token counts", () => {
 	assert.deepEqual([0, 999, 1000, 12_500, 340_000, 999_999, 1_200_000, 2_500_000_000].map(formatCount), ["0", "999", "1k", "12.5k", "340k", "1M", "1.2M", "2.5B"]);
 });
+
+const LEDGER = { kind: "ledger" as const, since: "2025-10-20", estimated: 2 };
+const todayRows = () => [
+	...parseActivity(ACTIVITY)!,
+	{ date: "2025-11-05", model: "anthropic/claude-sonnet-4", permaslug: null, provider: null, usage: 1, byokUsage: 0, requests: 1, promptTokens: 10, completionTokens: 1, reasoningTokens: 0, cachedTokens: 0 },
+];
+
+test("summarizeActivity can end the window today for local data", () => {
+	const s = summarizeActivity(todayRows(), NOW, 5, true);
+	assert.equal(s.days.at(-1), "2025-11-05");
+	assert.equal(s.days[0], "2025-10-07", "still 30 days");
+	assert.equal(s.series[0]!.daily[29], 1, "today counts");
+	assert.equal(summarizeActivity(todayRows(), NOW).days.at(-1), "2025-11-05", "activity keeps its own end rule");
+});
+
+test("renderModels labels ledger data as local with the estimated count and a management-key hint", () => {
+	const lines = renderModels(summarizeActivity(todayRows(), NOW, 5, true), 100, theme, LEDGER);
+	for (const line of lines) assert.ok(line.length <= 100, line);
+	assert.equal(lines[1], "Local: usage through Pi on this machine since Oct 20 · 2 estimated");
+	assert.equal(lines[2], "Last 30 days incl. today (UTC)");
+	assert.ok(!lines.some((line) => line.includes("Completed UTC days")));
+	assert.ok(lines.includes("Ranking by model"));
+	assert.match(lines.at(-1)!, /OPENROUTER_MANAGEMENT_KEY.*account-wide/);
+	const exact = renderModels(summarizeActivity(todayRows(), NOW, 5, true), 100, theme, { ...LEDGER, estimated: 0 });
+	assert.equal(exact[1], "Local: usage through Pi on this machine since Oct 20");
+});
+
+test("renderModels explains an empty ledger with shortened management-key instructions", () => {
+	const lines = renderModels(summarizeActivity([], NOW, 5, true), 100, theme, { kind: "ledger", since: null, estimated: 0 });
+	const text = lines.join("\n");
+	assert.match(lines[0]!, /No OpenRouter usage through Pi recorded on this machine yet/);
+	assert.match(text, /https:\/\/openrouter\.ai\/settings\/management-keys/);
+	assert.match(text, /OPENROUTER_MANAGEMENT_KEY/);
+	assert.ok(!text.includes("Ranking"));
+	assert.ok(lines.length <= 4);
+});

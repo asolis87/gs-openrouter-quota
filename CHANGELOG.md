@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Models tab falls back to a **local ledger** when `OPENROUTER_MANAGEMENT_KEY` is not set: every OpenRouter response made through Pi on this machine (subagents included) is appended to `<agent dir>/openrouter-quota/ledger.jsonl` (date, model, cost, BYOK, tokens; no keys, prompts or content), kept for 30 days.
+- Ledger mode includes today, states its source ("Local: usage through Pi on this machine since …", with the number of estimated costs) and hints that a management key shows account-wide data. With the key, `/api/v1/activity` is used exactly as before.
+- When Pi only has a catalog estimate for a response, the billed cost (and BYOK) is fetched once from `GET /api/v1/generation?id=…` with the inference key, ~3s later. The fetch allowlist accepts that URL only with a single validated id.
+
 ## 0.3.0
 
 - `/openrouter` overlay gets tabs: **Quota** (the existing report) and **Models**, switched with `tab`. `r` refreshes the active tab.

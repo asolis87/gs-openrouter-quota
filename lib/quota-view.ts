@@ -1,4 +1,4 @@
-import type { ActivityResult } from "./activity.ts";
+import type { ActivityResult, LedgerSource } from "./activity.ts";
 import { renderMissingKey, renderModels, summarizeActivity, type ModelsSummary } from "./models-report.ts";
 import type { FetchResult, KeyInfo } from "./openrouter.ts";
 import { findAlerts, renderReport, type Alert, type ReportTheme } from "./report.ts";
@@ -52,7 +52,7 @@ export class QuotaView {
 	private readonly deps: QuotaViewDeps;
 	private tab: Tab = "quota";
 	private readonly quota: Pane<KeyInfo> = pane();
-	private readonly models: Pane<ModelsSummary> = pane();
+	private readonly models: Pane<{ summary: ModelsSummary; source?: LedgerSource }> = pane();
 
 	constructor(deps: QuotaViewDeps) {
 		this.deps = deps;
@@ -90,7 +90,9 @@ export class QuotaView {
 		const load = this.deps.loadActivity ?? (async (): Promise<ActivityResult> => ({ ok: false, error: "Models are not available here." }));
 		this.run(this.models, load, (result) => {
 			if (!result.ok) return { error: result.error, missingKey: result.missingKey === true };
-			return { data: summarizeActivity(result.rows, this.deps.now()) };
+			// Ledger data is local and includes today; /activity covers completed UTC days.
+			const summary = summarizeActivity(result.rows, this.deps.now(), undefined, result.source !== undefined);
+			return { data: { summary, source: result.source } };
 		});
 	}
 
@@ -146,7 +148,7 @@ export class QuotaView {
 			else if (this.quota.loading) body.push(theme.fg("dim", "Fetching OpenRouter quota…"));
 			if (this.quota.error) body.push(theme.fg("error", this.quota.error));
 		} else {
-			if (this.models.data) body.push(...renderModels(this.models.data, content, theme));
+			if (this.models.data) body.push(...renderModels(this.models.data.summary, content, theme, this.models.data.source));
 			else if (this.models.loading) body.push(theme.fg("dim", "Fetching OpenRouter activity…"));
 			if (this.models.missingKey) body.push(...renderMissingKey(theme));
 			else if (this.models.error) body.push(theme.fg("error", this.models.error));
