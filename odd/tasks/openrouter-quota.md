@@ -35,3 +35,4 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - L6: T5 verified independently (gentle-ai-verify): S8-S12 pass, no credential findings; 40/40 tests, tsc 0. Released 0.3.0 (3170d41). Not verified live against /activity.
 - L7: User's account is an organization member without access to management keys ("mi cuenta de openrouter es de organization, asi que no tengo acceso al panel de managementKey.. tenemos alguna otra opcion?"). Options presented (admin key / local ledger); user: "si, vamos con B como respaldo".
 - L8: T6 done (251816a, 0.4.0): 64/64 tests, tsc 0; smoke with temp PI_CODING_AGENT_DIR recorded only openrouter assistant messages, no content. Known limits: compaction (>512KB) can race with a concurrent append; pending cost correction dropped if a short-lived process exits. Not verified live.
+- L9: User tested 0.4.0 live in Pi: "ya lo probe, se ve bastante bien".
