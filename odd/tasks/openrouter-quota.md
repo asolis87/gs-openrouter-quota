@@ -15,6 +15,7 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - S10: Models tab shows "Gráfico diario apilado" (daily spend stacked by model, one color per top model, "Spend in last 30 days" total), "Ranking por modelo ($ y %)" (spend incl. BYOK, share of total, requests, BYOK marked) and "Tokens por modelo" (prompt, completion, reasoning, cached). No per-provider breakdown (not selected).
 - S11: Without the management key the Models tab shows "Instrucciones para configurarla" (create a management key in OpenRouter Settings → Management Keys, export OPENROUTER_MANAGEMENT_KEY).
 - S12: Models data is fetched on demand: when the Models tab is first opened and on `r` while it is active. Today is not in /activity; the tab says the window covers completed UTC days.
+- S13: "si, vamos con B como respaldo" — when OPENROUTER_MANAGEMENT_KEY is absent, the Models tab falls back to a local ledger of OpenRouter usage made through Pi on this machine (per generation: date, model, cost, BYOK, tokens; exact cost from `GET /api/v1/generation?id=` with the inference key when Pi exposes the generation id, else Pi's own cost). The tab states the source ("only usage through Pi on this machine, since <first date>"). With the management key, account data from /activity is used as before. The ledger stays local, holds no keys, and keeps at most the last 30 days.
 
 ## Tasks
 - T1 [S2] OpenRouter key-info client + parser (pure, tested). route: inline. commit: d7a44a8
@@ -22,6 +23,7 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - T3 [S5,S6,S7] `/openrouter` command: detail rendering + threshold alerts. route: inline. commit: 8cfe45b
 - T4 [S1] Package metadata, README, Gentle Hub topics instructions. route: inline. commit: b989250
 - T5 [S8-S12] Tabbed overlay + Models tab (activity client, stacked chart, ranking, tokens, missing-key instructions). route: delegated worker (context backstop) + independent verify (Risk item 2: management credential). commit: 3170d41
+- T6 [S13] Local usage ledger fallback for the Models tab. route: explore (Pi response id/cost) → delegated worker (context backstop). commit: —
 
 ## Log
 - L1: "Hola, quiero agregar un paquete/extension a gentle-shell que pueda verse en https://gentlemanprogramming.com/gentle-hub/ , mi idea es tener una forma de visualizar la quota de openrouter, ya sea por plan o por api , los limites y toda la info que pueda resultarle util al usuario, se entiende?"
@@ -31,3 +33,4 @@ Listed on Gentle Hub via GitHub topics `gentle-shell-package` + `gentle-shell-ex
 - L4: Evidence — 18/18 tests; gentle-shell's real parseUsageSource/parseProviderUsage accept the source and render the alt+u panel; /openrouter smoke test with a stubbed Pi (card, alerts, error and missing-key paths). Pending: live check with a real OpenRouter key; GitHub repo + topics.
 - L5: "se podria meter un tab a la seccion /openrouter donde pueda visualizarse el uso por modelo como lo muestra openrouter?" Answers: "Sí, implementala"; key "Env OPENROUTER_MANAGEMENT_KEY"; content "Gráfico diario apilado, Ranking por modelo ($ y %), Tokens por modelo"; without key "Instrucciones para configurarla".
 - L6: T5 verified independently (gentle-ai-verify): S8-S12 pass, no credential findings; 40/40 tests, tsc 0. Released 0.3.0 (3170d41). Not verified live against /activity.
+- L7: User's account is an organization member without access to management keys ("mi cuenta de openrouter es de organization, asi que no tengo acceso al panel de managementKey.. tenemos alguna otra opcion?"). Options presented (admin key / local ledger); user: "si, vamos con B como respaldo".
