@@ -1,10 +1,50 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
+import { fetchKeyInfo, OPENROUTER_KEY_URL, OPENROUTER_PROVIDER, resolveApiKey, type KeyInfo } from "../lib/openrouter.ts";
+import { findAlerts, parseThreshold, renderReport, THRESHOLD_ENV } from "../lib/report.ts";
 import { createUsageSource, USAGE_SOURCE_EVENT } from "../lib/usage-source.ts";
+
+const ENTRY_TYPE = "openrouter-quota";
+const FETCH_TIMEOUT_MS = 10_000;
+
+interface ReportEntry {
+	info: KeyInfo;
+	fetchedAt: number;
+	threshold: number;
+}
+
+// Fixed-origin and time-bounded: the only URL this command ever requests.
+const boundedFetch = ((input: unknown, init?: RequestInit) => {
+	if (String(input) !== OPENROUTER_KEY_URL) return Promise.reject(new Error("unexpected URL"));
+	return fetch(OPENROUTER_KEY_URL, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+}) as typeof fetch;
 
 export default function openrouterQuota(pi: ExtensionAPI): void {
 	// Re-emitting on every session_start is safe: gentle-shell keeps the newest
 	// source per provider. Without gentle-shell installed nobody listens.
 	pi.on("session_start", () => {
 		pi.events.emit(USAGE_SOURCE_EVENT, createUsageSource(process.env));
+	});
+
+	// A TUI-only card: the report stays out of the model's context.
+	pi.registerEntryRenderer<ReportEntry>(ENTRY_TYPE, (entry, _options, theme) => {
+		const data = entry.data;
+		if (!data) return undefined;
+		return new Text(renderReport(data.info, data.fetchedAt, data.threshold, theme).join("\n"), 1, 0);
+	});
+
+	pi.registerCommand(OPENROUTER_PROVIDER, {
+		description: "Show OpenRouter quota: key limit, budgets, usage in $, free-model requests",
+		handler: async (_args, ctx) => {
+			const apiKey = await resolveApiKey(ctx.modelRegistry, process.env);
+			const result = await fetchKeyInfo(apiKey, boundedFetch);
+			if (!result.ok) {
+				if (ctx.hasUI) ctx.ui.notify(result.error, "error");
+				return;
+			}
+			const threshold = parseThreshold(process.env[THRESHOLD_ENV]);
+			pi.appendEntry<ReportEntry>(ENTRY_TYPE, { info: result.info, fetchedAt: Date.now(), threshold });
+			if (ctx.hasUI) for (const alert of findAlerts(result.info, threshold)) ctx.ui.notify(alert.message, alert.level);
+		},
 	});
 }
